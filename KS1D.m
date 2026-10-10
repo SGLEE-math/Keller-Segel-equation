@@ -1,7 +1,7 @@
 clear; clc; close all;
 
-nx=100; Lx=-1; Rx=1; h=(Rx-Lx)/nx; x=(Lx+0.5*h:h:Rx-0.5*h)'; dt=0.1*h;
-max_it=10; ns=max_it/10;
+nx=100; Lx=-1; Rx=1; h=(Rx-Lx)/nx; x=(Lx+0.5*h:h:Rx-0.5*h)'; dt=0.1*h; theta=0.99;
+max_it=10; ns=max_it/10; 
 
 L=-2*eye(nx);
 for ix=1:nx-1
@@ -17,7 +17,7 @@ plot(x,u, x,v);
 drawnow;
 
 for it=1:max_it
-    maxGS=1000; itGS=0; tol=1e-10; ou=u; theta=0.99;
+    maxGS=1000; itGS=0; tol=1e-10; ou=u; 
     oup=0.5*(ou([2:end,end])+ou); oun=0.5*(ou([1,1:end-1])+ou);
     while true
         itGS=itGS+1;
