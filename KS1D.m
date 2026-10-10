@@ -17,7 +17,7 @@ plot(x,u, x,v);
 drawnow;
 
 for it=1:max_it
-    maxGS=1000; itGS=0; tol=1e-10; ou=u;
+    maxGS=1000; itGS=0; tol=1e-10; ou=u; theta=0.99;
     oup=0.5*(ou([2:end,end])+ou); oun=0.5*(ou([1,1:end-1])+ou);
     while true
         itGS=itGS+1;
