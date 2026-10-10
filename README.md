@@ -4,6 +4,7 @@ Gyeonggyu Lee and Seunggyu Lee, Decoupled structure-preserving scheme with Lyapu
 # Files
 - KS1D.m: one-dimensional simulation
 - KS2D.m: two-dimensional simulation
+- ks_positive_step.m: Positive safeguard algorithm
 
 # License
 This project is distributed under the MIT License.
