@@ -37,6 +37,7 @@ zlabel('$u$','Interpreter','latex');
 drawnow;
 % exportgraphics(gca,'result2d_initial.eps');
 
+theta=0.99;
 for it=1:max_it
     maxGS=1000; itGS=0; tol=1e-8; ou=u; tu=0*u; nu=0*u;
     ouxp=0.5*(ou([2:end,end],:)+ou); ouxn=0.5*(ou([1,1:end-1],:)+ou);
