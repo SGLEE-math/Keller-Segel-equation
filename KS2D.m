@@ -86,11 +86,11 @@ for it=1:max_it
         end
         nu=ks_positive_step(u,nu,theta);
         err=norm(nu(:)-u(:),'inf');
+        u=nu;
         if (err<tol)||(itGS>maxGS)
             % fprintf('it=%d, err=%1.3e\n',itGS,err)
             break;
         end
-        u=nu;
     end
 
     Ax=(1+dt)*eye(nx)-dt*LapX;
