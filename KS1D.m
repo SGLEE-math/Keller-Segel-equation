@@ -31,10 +31,8 @@ for it=1:max_it
         itGS=itGS+1;
 
         B=K*spdiags(1./u,0,nx,nx);
-        cof=I-dt*B;
-        sor=ou+dt*K*(log(u)-v)
-        nu=cof\sor;
-        nu=ks_positive_step(u,nu,theta);
+        cof=I-dt*B; sor=ou+dt*K*(log(u)-v);
+        nu=cof\sor; nu=ks_positive_step(u,nu,theta);
         
         err=norm(nu-u,'inf');
         u=nu;
@@ -44,7 +42,7 @@ for it=1:max_it
         end
     end
 
-    cof=(1+dt)*eye(nx)-dt*L; sor=v+dt*u;
+    sor=v+dt*u;
     v=dAv\sor;
 
     mass(it+1)=sum(u,'all')*h;
