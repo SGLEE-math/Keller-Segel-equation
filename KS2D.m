@@ -5,14 +5,15 @@ h=(Rx-Lx)/nx; x=(Lx+0.5*h:h:Rx-0.5*h)'; y=x';
 dt=0.1*h;
 max_it=100; ns=max_it/100;
 
-LapX=-2*eye(nx);
+Ix=speye(nx); Iy=speye(ny);
+LapX=-2*Ix;
 for ix=1:nx-1
     LapX(ix,ix+1)=1; LapX(ix+1,ix)=1;
 end
 LapX(1,1)=LapX(1,1)+LapX(1,2); LapX(nx,nx)=LapX(nx,nx)+LapX(nx,nx-1);
 LapX=LapX/h^2;
 
-LapY=-2*eye(ny);
+LapY=-2*Iy;
 for iy=1:ny-1
     LapY(iy,iy+1)=1; LapY(iy+1,iy)=1;
 end
@@ -37,28 +38,36 @@ zlabel('$u$','Interpreter','latex');
 drawnow;
 % exportgraphics(gca,'result2d_initial.eps');
 
+Av=(1+dt)*speye(nx*ny)-dt*(kron(Iy,LapX)+kron(LapY,Ix));
+dAv=decomposition(Av,'chol');
+jx=(1:nx-1)'; jy=(1:ny-1)';
+rowX=[jx;jx;jx+1;jx+1];
+colX=[jx;jx+1;jx;jx+1];
+rowY=[jy;jy;jy+1;jy+1];
+colY=[jy;jy+1;jy;jy+1];
 theta=0.99;
 for it=1:max_it
     maxGS=1000; itGS=0; tol=1e-8; ou=u; tu=0*u; nu=0*u;
     ouxp=0.5*(ou([2:end,end],:)+ou); ouxn=0.5*(ou([1,1:end-1],:)+ou);
     ouyp=0.5*(ou(:,[2:end,end])+ou); ouyn=0.5*(ou(:,[1,1:end-1])+ou);
+    
+    Kx=cell(ny,1); Ky=cell(nx,1);
+    for iy=1:ny
+        face=ouxp(1:nx-1,iy)/h^2;
+        Kx{iy}=sparse(rowX,colX,[-face;face;face;-face],nx,nx);
+    end
+    for ix=1:nx
+        face=ouyp(ix,1:ny-1).'/h^2;
+        Ky{ix}=sparse(rowY,colY,[-face;face;face;-face],ny,ny);
+    end
     while true
         itGS=itGS+1;
 
         uyp=u(:,[2:end,end]); uyn=u(:,[1,1:end-1]);
         vyp=v(:,[2:end,end]); vyn=v(:,[1,1:end-1]);
         for iy=1:ny
-            Bx=zeros(nx);
-            for ix=1:nx-1
-                Bx(ix,ix)=Bx(ix,ix)-ouxp(ix,iy)/u(ix,iy);
-                Bx(ix,ix+1)=ouxp(ix,iy)/u(ix+1,iy);
-            end
-            for ix=2:nx
-                Bx(ix,ix)=Bx(ix,ix)-ouxn(ix,iy)/u(ix,iy);
-                Bx(ix,ix-1)=ouxn(ix,iy)/u(ix-1,iy);
-            end
-            Bx=Bx/h^2;
-            cof=eye(nx)-dt*Bx;
+            Bx=Kx{iy}*spdiags(1./u(:,iy),0,nx,nx);
+            cof=Ix-dt*Bx;
             sor=ou(:,iy)+(dt/h^2) ...
                 *(ouxp(:,iy).*(log(u([2:end,end],iy))-v([2:end,end],iy)) ...
                 +ouxn(:,iy).*(log(u([1,1:end-1],iy))-v([1,1:end-1],iy)) ...
@@ -70,18 +79,8 @@ for it=1:max_it
         end
 
         for ix=1:nx
-            By=zeros(ny);
-            for iy=1:ny-1
-                By(iy,iy)=By(iy,iy)-ouyp(ix,iy)/u(ix,iy);
-                By(iy,iy+1)=ouyp(ix,iy)/u(ix,iy+1);
-            end
-            for iy=2:ny
-                By(iy,iy)=By(iy,iy)-ouyn(ix,iy)/u(ix,iy);
-                By(iy,iy-1)=ouyn(ix,iy)/u(ix,iy-1);
-            end
-            By=By/h^2;
-
-            cof=eye(ny)-dt*By;
+            By=Ky{ix}*spdiags(1./u(ix,:).',0,ny,ny);
+            cof=Iy-dt*By;
             nu(ix,:) = (cof\tu(ix,:).').';
         end
         nu=ks_positive_step(u,nu,theta);
@@ -93,10 +92,8 @@ for it=1:max_it
         end
     end
 
-    Ax=(1+dt)*eye(nx)-dt*LapX;
-    Ay=-dt*LapY;
     sor=v+dt*u;
-    v=sylvester(Ax,Ay,sor);
+    v=reshape(dAv\sor(:),nx,ny);
 
     mass(it+1)=sum(u,'all')*h^2;
     ene(it+1)=sum(0.5*v.^2-0.5*v.*(LapX*v+(LapY*v')')-u.*v+u.*log(u)-u,'all')*h^2;
