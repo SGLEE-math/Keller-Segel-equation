@@ -3,7 +3,8 @@ clear; clc; close all;
 nx=100; Lx=-1; Rx=1; h=(Rx-Lx)/nx; x=(Lx+0.5*h:h:Rx-0.5*h)'; dt=0.1*h;
 max_it=10; ns=max_it/10; 
 
-L=-2*eye(nx);
+I=speye(nx);
+L=-2*speye(nx);
 for ix=1:nx-1
     L(ix,ix+1)=1; L(ix+1,ix)=1;
 end
@@ -17,26 +18,21 @@ plot(x,u, x,v);
 drawnow;
 
 theta=0.99;
+Av=(1+dt)*I-dt*L;
+dAv=decomposition(Av,'chol');
 for it=1:max_it
     maxGS=1000; itGS=0; tol=1e-10; ou=u; 
     oup=0.5*(ou([2:end,end])+ou); oun=0.5*(ou([1,1:end-1])+ou);
+
+    j=(1:nx-1)';
+    a=oup(1:nx-1)/h^2;
+    K=sparse([j; j+1; j; j+1], [j; j+1; j+1; j], [-a; -a; a; a],nx,nx);
     while true
         itGS=itGS+1;
 
-        B=zeros(nx);
-        for ix=1:nx-1
-            B(ix,ix)=B(ix,ix)-oup(ix)/u(ix);
-            B(ix,ix+1)=oup(ix)/u(ix+1);
-        end
-        for ix=2:nx
-            B(ix,ix)=B(ix,ix)-oun(ix)/u(ix);
-            B(ix,ix-1)=oun(ix)/u(ix-1);
-        end
-        B=B/h^2;
-
-        cof=eye(nx)-dt*B;
-        sor=ou+(dt/h^2)*(oup.*(log(u([2:end,end]))-v([2:end,end])) ...
-            -(oup+oun).*(log(u)-v)+oun.*(log(u([1,1:end-1]))-v([1,1:end-1])));
+        B=K*spdiags(1./u,0,nx,nx);
+        cof=I-dt*B;
+        sor=ou+dt*K*(log(u)-v)
         nu=cof\sor;
         nu=ks_positive_step(u,nu,theta);
         
@@ -49,7 +45,7 @@ for it=1:max_it
     end
 
     cof=(1+dt)*eye(nx)-dt*L; sor=v+dt*u;
-    v=cof\sor;
+    v=dAv\sor;
 
     mass(it+1)=sum(u,'all')*h;
     ene(it+1)=sum(0.5*v.^2-0.5*v.*(L*v)-u.*v+u.*log(u)-u,'all')*h;
